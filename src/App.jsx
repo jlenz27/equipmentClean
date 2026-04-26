@@ -10,11 +10,25 @@ const EMAIL_TO = "jlenz@dexiosmfg.com";
 
 const equipmentList = [
   {
-    id: "EQ-001",
-    name: "REB Filler",
+    id: "D10008",
+    name: "Flo Master",
     type: "Filler",
     buildGuideLink:
-      "https://yourcompany.sharepoint.com/sites/YourSite/Shared%20Documents/REB-Filler-Build-Guide.pdf",
+      "https://yourcompany.sharepoint.com/sites/YourSite/Shared%20Documents/Flo-Master-D10008-Build-Guide.pdf",
+    buildSteps: [
+      "Pre-Assembly Check",
+      "Pump / Product Path Setup",
+      "Hose and Fitting Check",
+      "Final Inspection",
+      "Sign-Off",
+    ],
+  },
+  {
+    id: "D10278",
+    name: "REB",
+    type: "Filler",
+    buildGuideLink:
+      "https://dexiosmfg-my.sharepoint.com/:w:/p/jlenz/IQBJ9gDNeY92SqwXNaiPcJnoAf2Sh5sVOyFbZYkdeB65560?e=oEr4U8",
     buildSteps: [
       "Cylinder Assembly",
       "Valve Housing",
@@ -24,30 +38,72 @@ const equipmentList = [
     ],
   },
   {
-    id: "EQ-002",
-    name: "Tube Filler - Kentex",
+    id: "D10290",
+    name: "REB",
     type: "Filler",
     buildGuideLink:
-      "https://yourcompany.sharepoint.com/sites/YourSite/Shared%20Documents/Tube-Filler-Kentex-Build-Guide.pdf",
+      "https://dexiosmfg-my.sharepoint.com/:w:/p/jlenz/IQBJ9gDNeY92SqwXNaiPcJnoAf2Sh5sVOyFbZYkdeB65560?e=oEr4U8",
+    buildSteps: [
+      "Cylinder Assembly",
+      "Valve Housing",
+      "Shaft Section",
+      "Final Inspection",
+      "Sign-Off",
+    ],
+  },
+  {
+    id: "D10110",
+    name: "Stickpump",
+    type: "Pump",
+    buildGuideLink:
+      "https://yourcompany.sharepoint.com/sites/YourSite/Shared%20Documents/Stickpump-D10110-Build-Guide.pdf",
+    buildSteps: [
+      "Pump Body Setup",
+      "Hose and Clamp Check",
+      "Connection Check",
+      "Final Inspection",
+      "Sign-Off",
+    ],
+  },
+  {
+    id: "D10301",
+    name: "Stickpump Saniforce",
+    type: "Pump",
+    buildGuideLink:
+      "https://yourcompany.sharepoint.com/sites/YourSite/Shared%20Documents/Stickpump-Saniforce-D10301-Build-Guide.pdf",
+    buildSteps: [
+      "Pump Body Setup",
+      "Sanitary Fitting Check",
+      "Connection Check",
+      "Final Inspection",
+      "Sign-Off",
+    ],
+  },
+  {
+    id: "D10097",
+    name: "Diaphragm Pump",
+    type: "Pump",
+    buildGuideLink:
+      "https://yourcompany.sharepoint.com/sites/YourSite/Shared%20Documents/Diaphragm-Pump-D10097-Build-Guide.pdf",
+    buildSteps: [
+      "Pump Body Setup",
+      "Air Line Check",
+      "Diaphragm / Seal Check",
+      "Final Inspection",
+      "Sign-Off",
+    ],
+  },
+  {
+    id: "D10068",
+    name: "Kentex Tube Filler",
+    type: "Tube Filler",
+    buildGuideLink:
+      "https://yourcompany.sharepoint.com/sites/YourSite/Shared%20Documents/Kentex-Tube-Filler-D10068-Build-Guide.pdf",
     buildSteps: [
       "Machine Setup",
       "Nozzle Setup",
       "Seal Check",
       "Trim Check",
-      "Final Inspection",
-    ],
-  },
-  {
-    id: "EQ-003",
-    name: "Autolabe 550 Labeler",
-    type: "Labeler",
-    buildGuideLink:
-      "https://yourcompany.sharepoint.com/sites/YourSite/Shared%20Documents/Autolabe-550-Build-Guide.pdf",
-    buildSteps: [
-      "Label Roll Install",
-      "Brake Setup",
-      "Sensor Check",
-      "Bottle Test",
       "Final Inspection",
     ],
   },
@@ -284,7 +340,7 @@ function CleaningScreen({ goHome, addRecord }) {
           >
             {equipmentList.map((item) => (
               <option key={item.id} value={item.id}>
-                {item.name}
+                {item.name} - {item.id}
               </option>
             ))}
           </select>
@@ -408,7 +464,7 @@ function BuildScreen({ goHome, addRecord }) {
           >
             {equipmentList.map((item) => (
               <option key={item.id} value={item.id}>
-                {item.name}
+                {item.name} - {item.id}
               </option>
             ))}
           </select>
