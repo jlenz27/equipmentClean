@@ -1,8 +1,6 @@
 import React, { useMemo, useState } from "react";
 import emailjs from "@emailjs/browser";
 
-// EmailJS setup
-// In production, these can be moved to Vercel environment variables.
 const EMAILJS_SERVICE_ID = "service_6if8pl1";
 const EMAILJS_TEMPLATE_ID = "template_zccybri";
 const EMAILJS_PUBLIC_KEY = "hJBgQyChQ8C0tKcQ3";
@@ -143,21 +141,7 @@ function buildEmailBody(record) {
     .join("\n");
 }
 
-function emailJsIsConfigured() {
-  return (
-    !EMAILJS_SERVICE_ID.includes("PASTE_YOUR") &&
-    !EMAILJS_TEMPLATE_ID.includes("PASTE_YOUR") &&
-    !EMAILJS_PUBLIC_KEY.includes("PASTE_YOUR")
-  );
-}
-
 async function sendEmailWithEmailJS(record) {
-  if (!emailJsIsConfigured()) {
-    throw new Error(
-      "EmailJS is not configured yet. Add your Service ID, Template ID, and Public Key."
-    );
-  }
-
   const templateParams = {
     to_email: EMAIL_TO,
     subject: buildEmailSubject(record),
@@ -175,107 +159,84 @@ async function sendEmailWithEmailJS(record) {
     notes: record.notes || "N/A",
   };
 
-  await emailjs.send(
-    EMAILJS_SERVICE_ID,
-    EMAILJS_TEMPLATE_ID,
-    templateParams,
-    {
-      publicKey: EMAILJS_PUBLIC_KEY,
-      limitRate: {
-        id: "equipment-tracker-submit",
-        throttle: 1000,
-      },
-    }
-  );
+  await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, templateParams, {
+    publicKey: EMAILJS_PUBLIC_KEY,
+    limitRate: { id: "equipment-tracker-submit", throttle: 1000 },
+  });
 
-  return {
-    ok: true,
-    message: "Email sent successfully.",
-  };
+  return { ok: true, message: "Email sent successfully." };
 }
 
-export default function EquipmentCleaningBuildApp() {
+export default function App() {
   const [screen, setScreen] = useState("home");
   const [records, setRecords] = useState([]);
 
   function addRecord(record) {
-    setRecords((currentRecords) => [record, ...currentRecords]);
+    setRecords((prev) => [record, ...prev]);
   }
 
   return (
-    <div style={styles.page}>
-      <div style={styles.appContainer}>
+    <>
+      <style>{globalCss}</style>
+      <div className="page">
         {screen === "home" && (
           <HomeScreen records={records} setScreen={setScreen} />
         )}
-
         {screen === "clean" && (
-          <CleaningScreen
-            goHome={() => setScreen("home")}
-            addRecord={addRecord}
-          />
+          <CleaningScreen goHome={() => setScreen("home")} addRecord={addRecord} />
         )}
-
         {screen === "build" && (
-          <BuildScreen
-            goHome={() => setScreen("home")}
-            addRecord={addRecord}
-          />
+          <BuildScreen goHome={() => setScreen("home")} addRecord={addRecord} />
         )}
       </div>
-    </div>
+    </>
   );
 }
 
 function HomeScreen({ records, setScreen }) {
   return (
-    <>
-      <div style={styles.heroCard}>
-        <p style={styles.kicker}>Equipment Tracker</p>
-        <h1 style={styles.title}>Cleaning & Build Sign-Off</h1>
-        <p style={styles.subtitle}>
-          Select equipment, enter initials, and send cleaning or build completion
-          emails automatically.
-        </p>
-      </div>
+    <div className="screen">
+      <header className="app-header">
+        <p className="app-kicker">Dexios Mfg</p>
+        <h1 className="app-title">Equipment Tracker</h1>
+      </header>
 
-      <div style={styles.homeButtons}>
-        <button style={styles.homeButton} onClick={() => setScreen("clean")}>
-          <span style={styles.homeButtonIcon}>✓</span>
-          Clean Equipment
+      <div className="action-grid">
+        <button className="action-card action-card--clean" onClick={() => setScreen("clean")}>
+          <span className="action-icon" aria-hidden="true">🧹</span>
+          <span className="action-label">Log Cleaning</span>
         </button>
-
-        <button style={styles.homeButton} onClick={() => setScreen("build")}>
-          <span style={styles.homeButtonIcon}>🔧</span>
-          Build Equipment
+        <button className="action-card action-card--build" onClick={() => setScreen("build")}>
+          <span className="action-icon" aria-hidden="true">🔧</span>
+          <span className="action-label">Log Build</span>
         </button>
       </div>
 
-      <div style={styles.card}>
-        <h2 style={styles.sectionTitle}>Recent Submissions</h2>
-
+      <section className="card" aria-label="Recent submissions">
+        <h2 className="section-heading">Recent</h2>
         {records.length === 0 ? (
-          <p style={styles.mutedText}>No records submitted yet.</p>
+          <p className="muted">No submissions yet.</p>
         ) : (
-          <div style={styles.recordList}>
-            {records.slice(0, 8).map((record, index) => (
-              <div key={index} style={styles.recordItem}>
-                <div>
-                  <strong>
-                    {record.recordType}: {record.equipmentName}
-                  </strong>
-                  <p style={styles.smallText}>Initials: {record.initials}</p>
-                  {record.status && (
-                    <p style={styles.smallText}>Status: {record.status}</p>
+          <ul className="record-list" role="list">
+            {records.slice(0, 10).map((record, i) => (
+              <li key={i} className={`record-item record-item--${record.recordType.toLowerCase()}`}>
+                <div className="record-badge">
+                  {record.recordType === "Cleaning" ? "🧹" : "🔧"}
+                </div>
+                <div className="record-body">
+                  <span className="record-name">{record.equipmentName}</span>
+                  <span className="record-meta">{record.equipmentId} · {record.initials}</span>
+                  {record.status && record.status !== "Complete" && (
+                    <span className="record-status">{record.status}</span>
                   )}
                 </div>
-                <p style={styles.timestamp}>{record.timestamp}</p>
-              </div>
+                <span className="record-time">{record.timestamp}</span>
+              </li>
             ))}
-          </div>
+          </ul>
         )}
-      </div>
-    </>
+      </section>
+    </div>
   );
 }
 
@@ -283,16 +244,16 @@ function CleaningScreen({ goHome, addRecord }) {
   const [equipmentId, setEquipmentId] = useState(equipmentList[0].id);
   const [initials, setInitials] = useState("");
   const [notes, setNotes] = useState("");
+  const [state, setState] = useState("idle"); // idle | sending | success | error
+  const [errorMsg, setErrorMsg] = useState("");
   const [submittedRecord, setSubmittedRecord] = useState(null);
-  const [submitMessage, setSubmitMessage] = useState("");
 
-  const selectedEquipment = equipmentList.find((item) => item.id === equipmentId);
+  const selectedEquipment = equipmentList.find((e) => e.id === equipmentId);
 
   async function handleSubmit(event) {
     event.preventDefault();
-
     if (!initials.trim()) {
-      alert("Please enter initials before submitting.");
+      alert("Please enter your initials before submitting.");
       return;
     }
 
@@ -305,73 +266,95 @@ function CleaningScreen({ goHome, addRecord }) {
       timestamp: getTimestamp(),
     };
 
+    setState("sending");
     try {
-      setSubmitMessage("Sending email...");
-      const result = await sendEmailWithEmailJS(record);
+      await sendEmailWithEmailJS(record);
       addRecord(record);
       setSubmittedRecord(record);
-      setSubmitMessage(result.message);
+      setState("success");
       setInitials("");
       setNotes("");
-    } catch (error) {
-      console.error(error);
-      setSubmitMessage(
-        error.message || "Email failed to send. Check your EmailJS setup."
-      );
+    } catch (err) {
+      console.error(err);
+      setErrorMsg(err.message || "Email failed. Check your connection and try again.");
+      setState("error");
     }
   }
 
+  if (state === "success" && submittedRecord) {
+    return (
+      <div className="screen">
+        <SuccessBanner
+          record={submittedRecord}
+          onAnother={() => { setState("idle"); setSubmittedRecord(null); }}
+          onHome={goHome}
+        />
+      </div>
+    );
+  }
+
   return (
-    <>
-      <BackButton goHome={goHome} />
+    <div className="screen">
+      <div className="form-header">
+        <button className="back-btn" onClick={goHome} aria-label="Back to home">
+          ← Back
+        </button>
+        <h1 className="form-title">Log Cleaning</h1>
+      </div>
 
-      <div style={styles.card}>
-        <h1 style={styles.formTitle}>Clean Equipment</h1>
-        <p style={styles.mutedText}>
-          Record which equipment was cleaned and who completed it.
-        </p>
-
-        <form style={styles.form} onSubmit={handleSubmit}>
-          <FormLabel>Equipment</FormLabel>
+      <form className="card form-card" onSubmit={handleSubmit} noValidate>
+        <Field label="Equipment">
           <select
-            style={styles.input}
+            className="input"
             value={equipmentId}
-            onChange={(event) => setEquipmentId(event.target.value)}
+            onChange={(e) => setEquipmentId(e.target.value)}
+            aria-label="Select equipment"
           >
             {equipmentList.map((item) => (
               <option key={item.id} value={item.id}>
-                {item.name} - {item.id}
+                {item.name} — {item.id}
               </option>
             ))}
           </select>
+        </Field>
 
-          <FormLabel>Initials</FormLabel>
+        <Field label="Your Initials">
           <input
-            style={styles.input}
+            className="input input--initials"
             value={initials}
             maxLength={5}
-            placeholder="Example: JL"
-            onChange={(event) => setInitials(event.target.value)}
+            placeholder="e.g. JL"
+            autoCapitalize="characters"
+            autoComplete="off"
+            onChange={(e) => setInitials(e.target.value)}
+            aria-label="Your initials"
           />
+        </Field>
 
-          <FormLabel>Notes</FormLabel>
+        <Field label="Notes (optional)">
           <textarea
-            style={styles.textarea}
+            className="input textarea"
             value={notes}
-            placeholder="Optional notes, lot number, condition, or issue found..."
-            onChange={(event) => setNotes(event.target.value)}
+            placeholder="Lot number, condition, issue found…"
+            onChange={(e) => setNotes(e.target.value)}
+            aria-label="Notes"
           />
+        </Field>
 
-          <button style={styles.submitButton} type="submit">
-            Submit Cleaning Record
-          </button>
+        {state === "error" && (
+          <p className="error-msg" role="alert">{errorMsg}</p>
+        )}
 
-          {submitMessage && <p style={styles.smallText}>{submitMessage}</p>}
-        </form>
-      </div>
-
-      {submittedRecord && <EmailPreview record={submittedRecord} />}
-    </>
+        <button
+          className="submit-btn"
+          type="submit"
+          disabled={state === "sending"}
+          aria-busy={state === "sending"}
+        >
+          {state === "sending" ? "Sending…" : "Submit Cleaning Record"}
+        </button>
+      </form>
+    </div>
   );
 }
 
@@ -381,41 +364,38 @@ function BuildScreen({ goHome, addRecord }) {
   const [status, setStatus] = useState("Complete");
   const [notes, setNotes] = useState("");
   const [checkedSteps, setCheckedSteps] = useState({});
+  const [state, setState] = useState("idle");
+  const [errorMsg, setErrorMsg] = useState("");
   const [submittedRecord, setSubmittedRecord] = useState(null);
-  const [submitMessage, setSubmitMessage] = useState("");
 
-  const selectedEquipment = equipmentList.find((item) => item.id === equipmentId);
+  const selectedEquipment = equipmentList.find((e) => e.id === equipmentId);
 
-  const completedStepCount = useMemo(() => {
-    return selectedEquipment.buildSteps.filter((step) => checkedSteps[step]).length;
-  }, [checkedSteps, selectedEquipment]);
+  const completedCount = useMemo(
+    () => selectedEquipment.buildSteps.filter((s) => checkedSteps[s]).length,
+    [checkedSteps, selectedEquipment]
+  );
+  const totalSteps = selectedEquipment.buildSteps.length;
+  const allChecked = completedCount === totalSteps;
 
-  function handleEquipmentChange(event) {
-    setEquipmentId(event.target.value);
+  function handleEquipmentChange(e) {
+    setEquipmentId(e.target.value);
     setCheckedSteps({});
     setSubmittedRecord(null);
-    setSubmitMessage("");
+    setState("idle");
   }
 
   function toggleStep(step) {
-    setCheckedSteps((current) => ({
-      ...current,
-      [step]: !current[step],
-    }));
+    setCheckedSteps((prev) => ({ ...prev, [step]: !prev[step] }));
   }
 
   async function handleSubmit(event) {
     event.preventDefault();
-
     if (!initials.trim()) {
-      alert("Please enter initials before submitting.");
+      alert("Please enter your initials before submitting.");
       return;
     }
 
-    const completedSteps = selectedEquipment.buildSteps.filter(
-      (step) => checkedSteps[step]
-    );
-
+    const completedSteps = selectedEquipment.buildSteps.filter((s) => checkedSteps[s]);
     const record = {
       recordType: "Build",
       equipmentId: selectedEquipment.id,
@@ -428,444 +408,674 @@ function BuildScreen({ goHome, addRecord }) {
       timestamp: getTimestamp(),
     };
 
+    setState("sending");
     try {
-      setSubmitMessage("Sending email...");
-      const result = await sendEmailWithEmailJS(record);
+      await sendEmailWithEmailJS(record);
       addRecord(record);
       setSubmittedRecord(record);
-      setSubmitMessage(result.message);
+      setState("success");
       setInitials("");
       setNotes("");
       setCheckedSteps({});
-    } catch (error) {
-      console.error(error);
-      setSubmitMessage(
-        error.message || "Email failed to send. Check your EmailJS setup."
-      );
+    } catch (err) {
+      console.error(err);
+      setErrorMsg(err.message || "Email failed. Check your connection and try again.");
+      setState("error");
     }
   }
 
+  if (state === "success" && submittedRecord) {
+    return (
+      <div className="screen">
+        <SuccessBanner
+          record={submittedRecord}
+          onAnother={() => { setState("idle"); setSubmittedRecord(null); }}
+          onHome={goHome}
+        />
+      </div>
+    );
+  }
+
   return (
-    <>
-      <BackButton goHome={goHome} />
+    <div className="screen">
+      <div className="form-header">
+        <button className="back-btn" onClick={goHome} aria-label="Back to home">
+          ← Back
+        </button>
+        <h1 className="form-title">Log Build</h1>
+      </div>
 
-      <div style={styles.card}>
-        <h1 style={styles.formTitle}>Build Equipment</h1>
-        <p style={styles.mutedText}>
-          Open the build guide, complete the checklist, and submit build sign-off.
-        </p>
-
-        <form style={styles.form} onSubmit={handleSubmit}>
-          <FormLabel>Equipment</FormLabel>
+      <form className="card form-card" onSubmit={handleSubmit} noValidate>
+        <Field label="Equipment">
           <select
-            style={styles.input}
+            className="input"
             value={equipmentId}
             onChange={handleEquipmentChange}
+            aria-label="Select equipment"
           >
             {equipmentList.map((item) => (
               <option key={item.id} value={item.id}>
-                {item.name} - {item.id}
+                {item.name} — {item.id}
               </option>
             ))}
           </select>
+        </Field>
 
-          <div style={styles.guideBox}>
-            <div>
-              <strong>Build Guide</strong>
-              <p style={styles.smallText}>
-                Replace this with the real SharePoint file, PDF, Excel guide, or
-                SharePoint page link.
-              </p>
-            </div>
-            <a
-              href={selectedEquipment.buildGuideLink}
-              target="_blank"
-              rel="noreferrer"
-              style={styles.guideButton}
-            >
-              Open Guide
-            </a>
-          </div>
+        <a
+          href={selectedEquipment.buildGuideLink}
+          target="_blank"
+          rel="noreferrer"
+          className="guide-link"
+          aria-label={`Open build guide for ${selectedEquipment.name}`}
+        >
+          <span>📄 Open Build Guide</span>
+          <span className="guide-arrow">↗</span>
+        </a>
 
-          <FormLabel>Build Checklist</FormLabel>
-          <div style={styles.checklistBox}>
+        <Field label={`Build Checklist — ${completedCount} / ${totalSteps}`}>
+          <div className="checklist" role="group" aria-label="Build checklist">
             {selectedEquipment.buildSteps.map((step) => (
-              <label key={step} style={styles.checklistItem}>
+              <label
+                key={step}
+                className={`check-row ${checkedSteps[step] ? "check-row--checked" : ""}`}
+              >
+                <span className={`check-box ${checkedSteps[step] ? "check-box--checked" : ""}`} aria-hidden="true">
+                  {checkedSteps[step] ? "✓" : ""}
+                </span>
                 <input
                   type="checkbox"
+                  className="sr-only"
                   checked={Boolean(checkedSteps[step])}
                   onChange={() => toggleStep(step)}
                 />
-                <span>{step}</span>
+                <span className="check-label">{step}</span>
               </label>
             ))}
-            <p style={styles.smallText}>
-              Completed: {completedStepCount} of {selectedEquipment.buildSteps.length}
-            </p>
+            <div className="progress-bar-wrap" role="progressbar" aria-valuenow={completedCount} aria-valuemax={totalSteps}>
+              <div className="progress-bar" style={{ width: `${(completedCount / totalSteps) * 100}%` }} />
+            </div>
           </div>
+        </Field>
 
-          <FormLabel>Initials</FormLabel>
+        <Field label="Your Initials">
           <input
-            style={styles.input}
+            className="input input--initials"
             value={initials}
             maxLength={5}
-            placeholder="Example: JL"
-            onChange={(event) => setInitials(event.target.value)}
+            placeholder="e.g. JL"
+            autoCapitalize="characters"
+            autoComplete="off"
+            onChange={(e) => setInitials(e.target.value)}
+            aria-label="Your initials"
           />
+        </Field>
 
-          <FormLabel>Build Status</FormLabel>
-          <select
-            style={styles.input}
-            value={status}
-            onChange={(event) => setStatus(event.target.value)}
-          >
-            <option value="Complete">Complete</option>
-            <option value="Issue Found">Issue Found</option>
-            <option value="Needs Supervisor Review">Needs Supervisor Review</option>
-          </select>
+        <Field label="Build Status">
+          <div className="status-group" role="group" aria-label="Build status">
+            {["Complete", "Issue Found", "Needs Supervisor Review"].map((opt) => (
+              <label
+                key={opt}
+                className={`status-option ${status === opt ? "status-option--active" : ""} ${
+                  opt === "Issue Found" ? "status-option--warn" : ""
+                } ${opt === "Needs Supervisor Review" ? "status-option--alert" : ""}`}
+              >
+                <input
+                  type="radio"
+                  name="status"
+                  value={opt}
+                  className="sr-only"
+                  checked={status === opt}
+                  onChange={() => setStatus(opt)}
+                />
+                {opt}
+              </label>
+            ))}
+          </div>
+        </Field>
 
-          <FormLabel>Notes</FormLabel>
+        <Field label="Notes (optional)">
           <textarea
-            style={styles.textarea}
+            className="input textarea"
             value={notes}
-            placeholder="Optional notes, missing parts, or issue found..."
-            onChange={(event) => setNotes(event.target.value)}
+            placeholder="Missing parts, issue found, observations…"
+            onChange={(e) => setNotes(e.target.value)}
+            aria-label="Notes"
           />
+        </Field>
 
-          <button style={styles.submitButton} type="submit">
-            Submit Build Record
-          </button>
+        {state === "error" && (
+          <p className="error-msg" role="alert">{errorMsg}</p>
+        )}
 
-          {submitMessage && <p style={styles.smallText}>{submitMessage}</p>}
-        </form>
+        <button
+          className="submit-btn"
+          type="submit"
+          disabled={state === "sending"}
+          aria-busy={state === "sending"}
+        >
+          {state === "sending" ? "Sending…" : "Submit Build Record"}
+        </button>
+      </form>
+    </div>
+  );
+}
+
+function Field({ label, children }) {
+  return (
+    <div className="field">
+      <span className="field-label">{label}</span>
+      {children}
+    </div>
+  );
+}
+
+function SuccessBanner({ record, onAnother, onHome }) {
+  return (
+    <div className="success-screen">
+      <div className="success-icon" aria-hidden="true">✓</div>
+      <h2 className="success-heading">Submitted!</h2>
+      <p className="success-sub">
+        {record.recordType} record for <strong>{record.equipmentName}</strong> sent to {EMAIL_TO}.
+      </p>
+
+      <div className="success-detail card">
+        <Row label="Type" value={record.recordType} />
+        <Row label="Equipment" value={`${record.equipmentName} (${record.equipmentId})`} />
+        <Row label="Initials" value={record.initials} />
+        <Row label="Time" value={record.timestamp} />
+        {record.status && <Row label="Status" value={record.status} />}
+        {record.completedSteps && (
+          <Row
+            label="Steps Done"
+            value={
+              record.completedSteps.length > 0
+                ? record.completedSteps.join(", ")
+                : "None checked"
+            }
+          />
+        )}
+        {record.notes && <Row label="Notes" value={record.notes} />}
       </div>
 
-      {submittedRecord && <EmailPreview record={submittedRecord} />}
-    </>
-  );
-}
-
-function BackButton({ goHome }) {
-  return (
-    <button style={styles.backButton} onClick={goHome}>
-      ← Back
-    </button>
-  );
-}
-
-function FormLabel({ children }) {
-  return <label style={styles.label}>{children}</label>;
-}
-
-function EmailPreview({ record }) {
-  const subject = `Equipment ${record.recordType} Submitted - ${record.equipmentName}`;
-
-  return (
-    <div style={styles.successCard}>
-      <h2 style={styles.successTitle}>Submission Recorded</h2>
-      <p style={styles.mutedText}>This is the information sent through EmailJS.</p>
-
-      <div style={styles.emailBox}>
-        <p>
-          <strong>Subject:</strong> {subject}
-        </p>
-        <hr style={styles.hr} />
-        <p>A {record.recordType.toLowerCase()} record has been submitted.</p>
-        <p>
-          <strong>Equipment:</strong> {record.equipmentName}
-        </p>
-        <p>
-          <strong>Initials:</strong> {record.initials}
-        </p>
-        <p>
-          <strong>Date/Time:</strong> {record.timestamp}
-        </p>
-        {record.status && (
-          <p>
-            <strong>Status:</strong> {record.status}
-          </p>
-        )}
-        {record.completedSteps && (
-          <p>
-            <strong>Completed Steps:</strong>{" "}
-            {record.completedSteps.length > 0
-              ? record.completedSteps.join(", ")
-              : "None checked"}
-          </p>
-        )}
-        {record.buildGuideLink && (
-          <p>
-            <strong>Build Guide:</strong> {record.buildGuideLink}
-          </p>
-        )}
-        {record.notes && (
-          <p>
-            <strong>Notes:</strong> {record.notes}
-          </p>
-        )}
+      <div className="success-actions">
+        <button className="submit-btn" onClick={onAnother}>
+          Submit Another
+        </button>
+        <button className="back-btn back-btn--lg" onClick={onHome}>
+          Back to Home
+        </button>
       </div>
     </div>
   );
 }
 
-const brand = {
-  charcoal: "#3f4444",
-  charcoalDark: "#242828",
-  mediumGray: "#6f7473",
-  lightGray: "#eef1ef",
-  cardGray: "#f7f8f6",
-  borderGray: "#d9dedb",
-  green: "#9bd23c",
-  greenDark: "#5f8f1f",
-  greenSoft: "#edf8dc",
-  white: "#ffffff",
-};
+function Row({ label, value }) {
+  return (
+    <div className="detail-row">
+      <span className="detail-label">{label}</span>
+      <span className="detail-value">{value}</span>
+    </div>
+  );
+}
 
-const styles = {
-  page: {
-    minHeight: "100vh",
-    background: `linear-gradient(135deg, ${brand.lightGray} 0%, #ffffff 55%, ${brand.greenSoft} 100%)`,
-    padding: "20px",
-    fontFamily:
-      "Gotham, Montserrat, Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif",
-    color: brand.charcoalDark,
-  },
-  appContainer: {
-    width: "100%",
-    maxWidth: "760px",
-    margin: "0 auto",
-  },
-  heroCard: {
-    background: `linear-gradient(135deg, ${brand.charcoalDark} 0%, ${brand.charcoal} 72%, ${brand.greenDark} 100%)`,
-    color: brand.white,
-    borderRadius: "28px",
-    padding: "28px",
-    boxShadow: "0 18px 44px rgba(36, 40, 40, 0.22)",
-    marginBottom: "18px",
-    border: `1px solid ${brand.charcoal}`,
-  },
-  kicker: {
-    margin: 0,
-    fontSize: "13px",
-    color: brand.green,
-    fontWeight: 800,
-    letterSpacing: "0.16em",
-    textTransform: "uppercase",
-  },
-  title: {
-    margin: "8px 0 8px",
-    fontSize: "34px",
-    lineHeight: 1.1,
-    letterSpacing: "0.02em",
-    textTransform: "uppercase",
-  },
-  subtitle: {
-    margin: 0,
-    color: "#e7ece9",
-    fontSize: "16px",
-    lineHeight: 1.5,
-  },
-  homeButtons: {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-    gap: "14px",
-    marginBottom: "18px",
-  },
-  homeButton: {
-    minHeight: "120px",
-    border: `1px solid ${brand.borderGray}`,
-    borderRadius: "24px",
-    background: brand.white,
-    color: brand.charcoalDark,
-    fontSize: "20px",
-    fontWeight: 800,
-    boxShadow: "0 8px 28px rgba(36, 40, 40, 0.08)",
-    cursor: "pointer",
-    letterSpacing: "0.02em",
-  },
-  homeButtonIcon: {
-    display: "block",
-    fontSize: "30px",
-    marginBottom: "8px",
-    color: brand.greenDark,
-  },
-  card: {
-    background: brand.white,
-    borderRadius: "24px",
-    padding: "22px",
-    boxShadow: "0 8px 28px rgba(36, 40, 40, 0.08)",
-    marginBottom: "18px",
-    border: `1px solid ${brand.borderGray}`,
-  },
-  sectionTitle: {
-    margin: "0 0 12px",
-    fontSize: "22px",
-    color: brand.charcoalDark,
-    textTransform: "uppercase",
-    letterSpacing: "0.06em",
-  },
-  formTitle: {
-    margin: "0 0 8px",
-    fontSize: "30px",
-    color: brand.charcoalDark,
-    textTransform: "uppercase",
-    letterSpacing: "0.05em",
-  },
-  mutedText: {
-    color: brand.mediumGray,
-    margin: "0 0 12px",
-    lineHeight: 1.5,
-  },
-  smallText: {
-    color: brand.mediumGray,
-    fontSize: "14px",
-    margin: "4px 0",
-  },
-  timestamp: {
-    color: brand.mediumGray,
-    fontSize: "12px",
-    margin: 0,
-    whiteSpace: "nowrap",
-  },
-  recordList: {
-    display: "grid",
-    gap: "10px",
-  },
-  recordItem: {
-    display: "flex",
-    justifyContent: "space-between",
-    gap: "12px",
-    background: brand.cardGray,
-    border: `1px solid ${brand.borderGray}`,
-    borderLeft: `6px solid ${brand.green}`,
-    borderRadius: "16px",
-    padding: "12px",
-  },
-  form: {
-    display: "grid",
-    gap: "10px",
-    marginTop: "18px",
-  },
-  label: {
-    fontWeight: 800,
-    color: brand.charcoal,
-    fontSize: "14px",
-    textTransform: "uppercase",
-    letterSpacing: "0.08em",
-  },
-  input: {
-    width: "100%",
-    boxSizing: "border-box",
-    border: `1px solid ${brand.borderGray}`,
-    borderRadius: "14px",
-    padding: "14px",
-    fontSize: "16px",
-    outline: "none",
-    background: brand.white,
-    color: brand.charcoalDark,
-  },
-  textarea: {
-    width: "100%",
-    boxSizing: "border-box",
-    minHeight: "110px",
-    border: `1px solid ${brand.borderGray}`,
-    borderRadius: "14px",
-    padding: "14px",
-    fontSize: "16px",
-    outline: "none",
-    resize: "vertical",
-    fontFamily: "inherit",
-    background: brand.white,
-    color: brand.charcoalDark,
-  },
-  submitButton: {
-    marginTop: "8px",
-    border: 0,
-    borderRadius: "16px",
-    padding: "16px",
-    background: brand.green,
-    color: brand.charcoalDark,
-    fontSize: "17px",
-    fontWeight: 900,
-    cursor: "pointer",
-    textTransform: "uppercase",
-    letterSpacing: "0.06em",
-    boxShadow: "0 10px 24px rgba(95, 143, 31, 0.24)",
-  },
-  backButton: {
-    marginBottom: "12px",
-    border: `1px solid ${brand.borderGray}`,
-    borderRadius: "14px",
-    padding: "11px 14px",
-    background: brand.white,
-    color: brand.charcoalDark,
-    fontWeight: 800,
-    cursor: "pointer",
-  },
-  guideBox: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    gap: "12px",
-    background: brand.cardGray,
-    border: `1px solid ${brand.borderGray}`,
-    borderLeft: `6px solid ${brand.green}`,
-    borderRadius: "16px",
-    padding: "14px",
-  },
-  guideButton: {
-    background: brand.charcoalDark,
-    color: brand.white,
-    borderRadius: "12px",
-    padding: "10px 12px",
-    textDecoration: "none",
-    fontWeight: 800,
-    whiteSpace: "nowrap",
-  },
-  checklistBox: {
-    border: `1px solid ${brand.borderGray}`,
-    borderRadius: "16px",
-    padding: "10px",
-    display: "grid",
-    gap: "8px",
-    background: brand.white,
-  },
-  checklistItem: {
-    display: "flex",
-    alignItems: "center",
-    gap: "10px",
-    background: brand.cardGray,
-    borderRadius: "12px",
-    padding: "10px",
-    cursor: "pointer",
-    fontWeight: 650,
-    border: `1px solid ${brand.borderGray}`,
-  },
-  successCard: {
-    background: brand.greenSoft,
-    border: `1px solid ${brand.green}`,
-    borderRadius: "24px",
-    padding: "22px",
-    boxShadow: "0 8px 28px rgba(36, 40, 40, 0.08)",
-    marginBottom: "18px",
-  },
-  successTitle: {
-    margin: "0 0 8px",
-    color: brand.greenDark,
-    textTransform: "uppercase",
-    letterSpacing: "0.06em",
-  },
-  emailBox: {
-    background: brand.white,
-    borderRadius: "16px",
-    padding: "16px",
-    border: `1px solid ${brand.borderGray}`,
-    lineHeight: 1.5,
-    overflowWrap: "anywhere",
-  },
-  hr: {
-    border: 0,
-    borderTop: `1px solid ${brand.borderGray}`,
-    margin: "12px 0",
-  },
-};
+const globalCss = `
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --green:        #8cc63f;
+    --green-dark:   #5a8a1a;
+    --green-soft:   #eef8dc;
+    --charcoal:     #2c3030;
+    --charcoal-mid: #4a5050;
+    --gray:         #7a8480;
+    --border:       #d6dbd8;
+    --bg:           #f2f4f2;
+    --white:        #ffffff;
+    --warn:         #e07b00;
+    --alert:        #c0392b;
+    --radius-sm:    10px;
+    --radius-md:    16px;
+    --radius-lg:    22px;
+    --font: Gotham, Montserrat, Inter, "Segoe UI", system-ui, sans-serif;
+  }
+
+  html, body {
+    background: var(--bg);
+    color: var(--charcoal);
+    font-family: var(--font);
+    font-size: 16px;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100dvh;
+  }
+
+  /* --- Layout --- */
+  .page {
+    min-height: 100dvh;
+    padding: 0 0 env(safe-area-inset-bottom, 16px);
+  }
+
+  .screen {
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 16px 16px 40px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  /* --- Header --- */
+  .app-header {
+    background: var(--charcoal);
+    color: var(--white);
+    border-radius: var(--radius-lg);
+    padding: 24px 20px;
+    margin-bottom: 4px;
+  }
+  .app-kicker {
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--green);
+    margin-bottom: 6px;
+  }
+  .app-title {
+    font-size: 28px;
+    font-weight: 900;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    line-height: 1.1;
+  }
+
+  /* --- Action Cards (home) --- */
+  .action-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  .action-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 28px 12px;
+    border-radius: var(--radius-lg);
+    border: 2px solid var(--border);
+    background: var(--white);
+    cursor: pointer;
+    transition: transform 0.1s, box-shadow 0.1s;
+    -webkit-tap-highlight-color: transparent;
+    min-height: 130px;
+  }
+  .action-card:active {
+    transform: scale(0.97);
+    box-shadow: none;
+  }
+  .action-card--clean { border-color: #b0d87a; }
+  .action-card--build { border-color: #aac4d8; }
+  .action-icon { font-size: 36px; line-height: 1; }
+  .action-label {
+    font-size: 15px;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--charcoal);
+  }
+
+  /* --- Card --- */
+  .card {
+    background: var(--white);
+    border-radius: var(--radius-lg);
+    padding: 18px;
+    border: 1px solid var(--border);
+  }
+
+  /* --- Section heading --- */
+  .section-heading {
+    font-size: 13px;
+    font-weight: 800;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--gray);
+    margin-bottom: 12px;
+  }
+
+  /* --- Record list --- */
+  .record-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .record-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    border-radius: var(--radius-md);
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--border);
+  }
+  .record-item--cleaning { border-left-color: var(--green); }
+  .record-item--build     { border-left-color: #5a9fd4; }
+  .record-badge { font-size: 22px; flex-shrink: 0; }
+  .record-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+  }
+  .record-name {
+    font-weight: 700;
+    font-size: 15px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .record-meta {
+    font-size: 13px;
+    color: var(--gray);
+  }
+  .record-status {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--warn);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .record-time {
+    font-size: 12px;
+    color: var(--gray);
+    flex-shrink: 0;
+    text-align: right;
+  }
+  .muted { color: var(--gray); font-size: 15px; }
+
+  /* --- Form header --- */
+  .form-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .form-title {
+    font-size: 24px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .form-card { display: flex; flex-direction: column; gap: 18px; }
+
+  /* --- Back button --- */
+  .back-btn {
+    display: inline-flex;
+    align-items: center;
+    padding: 10px 16px;
+    border-radius: var(--radius-md);
+    border: 1.5px solid var(--border);
+    background: var(--white);
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    color: var(--charcoal);
+    white-space: nowrap;
+    -webkit-tap-highlight-color: transparent;
+    flex-shrink: 0;
+  }
+  .back-btn:active { background: var(--bg); }
+  .back-btn--lg {
+    width: 100%;
+    justify-content: center;
+    padding: 16px;
+    font-size: 16px;
+  }
+
+  /* --- Field --- */
+  .field { display: flex; flex-direction: column; gap: 8px; }
+  .field-label {
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--charcoal-mid);
+  }
+
+  /* --- Inputs --- */
+  .input {
+    width: 100%;
+    padding: 14px 16px;
+    border-radius: var(--radius-md);
+    border: 1.5px solid var(--border);
+    background: var(--white);
+    font-size: 16px;
+    font-family: var(--font);
+    color: var(--charcoal);
+    outline: none;
+    appearance: none;
+    -webkit-appearance: none;
+    transition: border-color 0.15s;
+  }
+  .input:focus { border-color: var(--green-dark); }
+  .input--initials {
+    font-size: 22px;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    max-width: 140px;
+  }
+  .textarea {
+    min-height: 100px;
+    resize: vertical;
+    line-height: 1.5;
+  }
+
+  /* --- Guide link --- */
+  .guide-link {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 16px;
+    border-radius: var(--radius-md);
+    border: 1.5px solid var(--border);
+    background: var(--bg);
+    color: var(--charcoal);
+    text-decoration: none;
+    font-size: 15px;
+    font-weight: 700;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .guide-link:active { background: var(--border); }
+  .guide-arrow { font-size: 18px; color: var(--gray); }
+
+  /* --- Checklist --- */
+  .checklist {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 4px 0;
+  }
+  .check-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px;
+    border-radius: var(--radius-md);
+    border: 1.5px solid var(--border);
+    background: var(--white);
+    cursor: pointer;
+    transition: background 0.1s, border-color 0.1s;
+    -webkit-tap-highlight-color: transparent;
+    min-height: 54px;
+  }
+  .check-row--checked {
+    background: var(--green-soft);
+    border-color: var(--green);
+  }
+  .check-box {
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    border: 2px solid var(--border);
+    background: var(--bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    font-weight: 900;
+    color: var(--green-dark);
+    flex-shrink: 0;
+    transition: background 0.1s, border-color 0.1s;
+  }
+  .check-box--checked {
+    background: var(--green);
+    border-color: var(--green-dark);
+    color: var(--white);
+  }
+  .check-label {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--charcoal);
+    flex: 1;
+  }
+  .sr-only {
+    position: absolute;
+    width: 1px; height: 1px;
+    padding: 0; margin: -1px;
+    overflow: hidden;
+    clip: rect(0,0,0,0);
+    border: 0;
+  }
+
+  /* --- Progress bar --- */
+  .progress-bar-wrap {
+    height: 6px;
+    background: var(--border);
+    border-radius: 99px;
+    overflow: hidden;
+    margin-top: 4px;
+  }
+  .progress-bar {
+    height: 100%;
+    background: var(--green);
+    border-radius: 99px;
+    transition: width 0.25s ease;
+  }
+
+  /* --- Status group --- */
+  .status-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .status-option {
+    display: flex;
+    align-items: center;
+    padding: 14px 16px;
+    border-radius: var(--radius-md);
+    border: 1.5px solid var(--border);
+    background: var(--white);
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.1s, border-color 0.1s;
+    -webkit-tap-highlight-color: transparent;
+    min-height: 52px;
+  }
+  .status-option--active             { background: var(--green-soft); border-color: var(--green); font-weight: 800; }
+  .status-option--warn.status-option--active  { background: #fff3e0; border-color: var(--warn); }
+  .status-option--alert.status-option--active { background: #fdecea; border-color: var(--alert); }
+
+  /* --- Submit button --- */
+  .submit-btn {
+    width: 100%;
+    padding: 18px;
+    border-radius: var(--radius-md);
+    border: none;
+    background: var(--green);
+    color: var(--charcoal);
+    font-size: 16px;
+    font-weight: 900;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: background 0.15s, transform 0.1s;
+  }
+  .submit-btn:active { transform: scale(0.98); background: #7ab532; }
+  .submit-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+
+  /* --- Error --- */
+  .error-msg {
+    color: var(--alert);
+    font-size: 14px;
+    font-weight: 600;
+    padding: 12px 14px;
+    background: #fdecea;
+    border-radius: var(--radius-sm);
+    border: 1px solid #f5c6c2;
+  }
+
+  /* --- Success screen --- */
+  .success-screen {
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 32px 16px 40px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    text-align: center;
+  }
+  .success-icon {
+    width: 72px; height: 72px;
+    border-radius: 50%;
+    background: var(--green);
+    color: var(--white);
+    font-size: 36px;
+    font-weight: 900;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .success-heading {
+    font-size: 30px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .success-sub { font-size: 16px; color: var(--gray); max-width: 340px; }
+  .success-detail {
+    width: 100%;
+    text-align: left;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .detail-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    font-size: 15px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border);
+  }
+  .detail-row:last-child { border-bottom: none; padding-bottom: 0; }
+  .detail-label { font-weight: 700; color: var(--charcoal-mid); flex-shrink: 0; }
+  .detail-value { color: var(--charcoal); text-align: right; word-break: break-word; }
+  .success-actions {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  /* --- Tablet+ --- */
+  @media (min-width: 520px) {
+    .screen { padding: 24px 24px 48px; gap: 18px; }
+    .app-title { font-size: 34px; }
+    .action-card { min-height: 150px; }
+    .action-icon { font-size: 42px; }
+  }
+`;
