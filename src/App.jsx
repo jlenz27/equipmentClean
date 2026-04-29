@@ -1,6 +1,10 @@
 import React, { useMemo, useState } from "react";
 import emailjs from "@emailjs/browser";
 
+// Change these to whatever you want
+const LOGIN_USERNAME = "dexios";
+const LOGIN_PASSWORD = "dexiosteam";
+
 const EMAILJS_SERVICE_ID = "service_6if8pl1";
 const EMAILJS_TEMPLATE_ID = "template_zccybri";
 const EMAILJS_PUBLIC_KEY = "hJBgQyChQ8C0tKcQ3";
@@ -168,11 +172,34 @@ async function sendEmailWithEmailJS(record) {
 }
 
 export default function App() {
+  const [loggedIn, setLoggedIn] = useState(
+    () => sessionStorage.getItem("eq-auth") === "1"
+  );
   const [screen, setScreen] = useState("home");
   const [records, setRecords] = useState([]);
 
+  function handleLogin() {
+    sessionStorage.setItem("eq-auth", "1");
+    setLoggedIn(true);
+  }
+
+  function handleLogout() {
+    sessionStorage.removeItem("eq-auth");
+    setLoggedIn(false);
+    setScreen("home");
+  }
+
   function addRecord(record) {
     setRecords((prev) => [record, ...prev]);
+  }
+
+  if (!loggedIn) {
+    return (
+      <>
+        <style>{globalCss}</style>
+        <LoginScreen onLogin={handleLogin} />
+      </>
+    );
   }
 
   return (
@@ -180,7 +207,7 @@ export default function App() {
       <style>{globalCss}</style>
       <div className="page">
         {screen === "home" && (
-          <HomeScreen records={records} setScreen={setScreen} />
+          <HomeScreen records={records} setScreen={setScreen} onLogout={handleLogout} />
         )}
         {screen === "clean" && (
           <CleaningScreen goHome={() => setScreen("home")} addRecord={addRecord} />
@@ -193,12 +220,71 @@ export default function App() {
   );
 }
 
-function HomeScreen({ records, setScreen }) {
+function LoginScreen({ onLogin }) {
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+
+  function handleSubmit(e) {
+    e.preventDefault();
+    if (username.trim() === LOGIN_USERNAME && password === LOGIN_PASSWORD) {
+      onLogin();
+    } else {
+      setError("Incorrect username or password.");
+      setPassword("");
+    }
+  }
+
+  return (
+    <div className="login-page">
+      <div className="login-card">
+        <h1 className="app-title" style={{ color: "var(--charcoal)", fontSize: 26, marginBottom: 24 }}>
+          Equipment Tracker
+        </h1>
+        <form onSubmit={handleSubmit} noValidate style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+          <div className="field">
+            <span className="field-label">Username</span>
+            <input
+              className="input"
+              type="text"
+              value={username}
+              autoComplete="username"
+              autoCapitalize="off"
+              onChange={(e) => { setUsername(e.target.value); setError(""); }}
+              aria-label="Username"
+            />
+          </div>
+          <div className="field">
+            <span className="field-label">Password</span>
+            <input
+              className="input"
+              type="password"
+              value={password}
+              autoComplete="current-password"
+              onChange={(e) => { setPassword(e.target.value); setError(""); }}
+              aria-label="Password"
+            />
+          </div>
+          {error && <p className="error-msg" role="alert">{error}</p>}
+          <button className="submit-btn" type="submit">Sign In</button>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+function HomeScreen({ records, setScreen, onLogout }) {
   return (
     <div className="screen">
       <header className="app-header">
-        <p className="app-kicker">Dexios Mfg</p>
-        <h1 className="app-title">Equipment Tracker</h1>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+          <div>
+            <h1 className="app-title">Equipment Tracker</h1>
+          </div>
+          <button className="logout-btn" onClick={onLogout} aria-label="Sign out">
+            Sign Out
+          </button>
+        </div>
       </header>
 
       <div className="action-grid">
@@ -1070,6 +1156,41 @@ const globalCss = `
     flex-direction: column;
     gap: 10px;
   }
+
+  /* --- Login --- */
+  .login-page {
+    min-height: 100dvh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px 16px;
+    background: var(--bg);
+  }
+  .login-card {
+    width: 100%;
+    max-width: 400px;
+    background: var(--white);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border);
+    padding: 32px 24px;
+  }
+
+  /* --- Logout button --- */
+  .logout-btn {
+    padding: 8px 14px;
+    border-radius: var(--radius-sm);
+    border: 1.5px solid rgba(255,255,255,0.25);
+    background: transparent;
+    color: rgba(255,255,255,0.8);
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    letter-spacing: 0.04em;
+    -webkit-tap-highlight-color: transparent;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .logout-btn:active { background: rgba(255,255,255,0.1); }
 
   /* --- Tablet+ --- */
   @media (min-width: 520px) {
